@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import Label, Button, messagebox
+from tkinter import Label, Button
 import cv2
 from PIL import Image, ImageTk
 import os
+import cargar_modelo  # Importar la lógica de cargar_modelo.py
 
 # Clase para manejar la cámara y la GUI
 class CameraApp:
@@ -28,20 +29,12 @@ class CameraApp:
         self.btn_pause.grid(row=1, column=2)
 
         # Botón para capturar una imagen
-        self.btn_capture = Button(window, text="Capturar Imagen", width=20, command=self.capture_image)
+        self.btn_capture = Button(window, text="Capturar Imagen", width=20, command=self.capture_and_classify_image)
         self.btn_capture.grid(row=2, column=1)
 
-        # Manejar el cierre de la ventana
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # Cambiar a DirectShow para evitar errores de captura
         self.vid = cv2.VideoCapture(self.video_source, cv2.CAP_DSHOW)
-
-        # Verificar si la cámara se abre correctamente
-        if not self.vid.isOpened():
-            messagebox.showerror("Error", "No se pudo acceder a la cámara.")
-            self.window.destroy()
-
         self.running = False  # Para saber si la cámara está en ejecución
         self.paused = False  # Para saber si el video está pausado
 
@@ -80,7 +73,7 @@ class CameraApp:
             # Llamar de nuevo a update después de 10 ms
             self.window.after(10, self.update)
 
-    def capture_image(self):
+    def capture_and_classify_image(self):
         if self.running and not self.paused:
             ret, frame = self.vid.read()
             if ret:
@@ -89,7 +82,11 @@ class CameraApp:
                     os.makedirs("capturas")  # Crear el directorio si no existe
                 image_path = os.path.join("capturas", "captura.png")
                 cv2.imwrite(image_path, frame)  # Guardar la imagen
-                messagebox.showinfo("Captura", f"Imagen guardada en: {image_path}")
+                print(f"Imagen guardada en: {image_path}")
+                
+                # Clasificar la imagen usando el modelo cargado
+                resultado = cargar_modelo.predecir_clasificacion(image_path)  # Llamada al modelo
+                print(f"Resultado de la clasificación: {resultado}")
 
     def on_closing(self):
         self.stop_camera()
@@ -98,4 +95,4 @@ class CameraApp:
 
 # Crear la ventana de Tkinter
 root = tk.Tk()
-app = CameraApp(root, "Cámara con Tkinter - Controles Básicos")
+app = CameraApp(root, "Cámara con Tkinter - Clasificación de Residuos")
